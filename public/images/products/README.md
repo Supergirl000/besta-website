@@ -12,3 +12,5 @@ No synthetic packaging, logo redraw, background replacement or product recolorin
 Company information is transcribed into `src/lib/brand.ts` from `Screenshot 2026-10-05 135711.png`, also supplied by the user. The screenshot itself is not published on the site. The listed phone is not treated as a verified WhatsApp account.
 
 Nouveaux visuels PNG fournis par l’utilisateur (Downloads, 11 octobre 2026). Visualisations promotionnelles, non photographies de référence. Packaging illustratif ; ne pas en déduire les spécifications. Anciens fichiers conservés pour provenance, non utilisés comme visuels principaux.
+
+Optimisation 12 octobre 2026 : fichiers *-promo.webp dérivés des trois PNG promotionnels, qualité 88, mêmes dimensions et cadrages. Les anciens WebP de la photographie événementielle ne sont pas utilisés comme images principales.

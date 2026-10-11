@@ -6,6 +6,7 @@ import './navigation.css';
 import './editorial.css';
 import './bold.css';
 import './premium.css';
+import './responsive.css';
 import localFont from 'next/font/local';
 const sans=localFont({src:'../../public/fonts/dm-sans.woff2',variable:'--font-sans',display:'swap'});
 const serif=localFont({src:[{path:'../../public/fonts/cormorant.woff2',style:'normal'},{path:'../../public/fonts/cormorant-italic.woff2',style:'italic'}],variable:'--font-editorial',display:'swap'});
