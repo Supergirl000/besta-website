@@ -1,0 +1,73 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const ts = require('typescript');
+const memory = new Map();
+globalThis.localStorage = {getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+globalThis.window = { localStorage: globalThis.localStorage };
+function compile(file,customRequire=require){const output=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;const module={exports:{}};new Function('require','module','exports',output)(customRequire,module,module.exports);return module.exports;}
+const catalog=compile('src/lib/products.ts');
+const {useCart}=compile('src/lib/cart.ts',name=>name==='./products'?catalog:require(name));
+useCart.getState().add(catalog.products[0].id);
+assert.equal(useCart.getState().items.length,0,'Unpriced product must not be added');
+// An isolated test fixture, never shipped to the storefront.
+catalog.products[0].price=1000;catalog.products[0].available=true;
+useCart.getState().add(catalog.products[0].id,2);
+useCart.getState().add(catalog.products[0].id,3);
+assert.equal(useCart.getState().items[0].quantity,5);
+useCart.getState().update(catalog.products[0].id,150);
+assert.equal(useCart.getState().items[0].quantity,99);
+assert.equal(JSON.parse(memory.get('besta-cart-v1')).state.items[0].quantity,99);
+const reloaded=compile('src/lib/cart.ts',name=>name==='./products'?catalog:require(name));
+assert.equal(reloaded.useCart.getState().items[0].quantity,99);
+useCart.getState().remove(catalog.products[0].id);
+assert.equal(useCart.getState().items.length,0);
+useCart.getState().add(catalog.products[0].id,NaN);
+assert.equal(useCart.getState().items[0].quantity,1);
+useCart.getState().update(catalog.products[0].id,Infinity);
+assert.equal(useCart.getState().items[0].quantity,1);
+useCart.getState().clear();
+memory.set('besta-cart-v1',JSON.stringify({state:{items:[null,{id:'invalid',quantity:2},{id:'besta-250',quantity:60},{id:'besta-250',quantity:50}]},version:0}));
+const recovered=compile('src/lib/cart.ts',name=>name==='./products'?catalog:require(name));
+assert.equal(recovered.useCart.getState().items.length,1);
+assert.equal(recovered.useCart.getState().items[0].quantity,99);
+console.log('PASS: cart pricing guard, add/merge, quantity limit, persistence, reload and removal.');
+const {chromium}=await import('@playwright/test');
+const installedBrowser=['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Google/Chrome/Application/chrome.exe'].find(file=>fs.existsSync(file));
+const browser=await chromium.launch({headless:true,...(installedBrowser?{executablePath:installedBrowser}:{})});
+const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+for(const route of ['/','/produits','/produits/red-chilli-seeds-250-g','/produits/red-chilli-seeds-petit-contenant','/notre-histoire','/pourquoi-besta','/contact','/panier','/commande','/faq','/livraison']){const response=await page.goto(`http://127.0.0.1:3000${route}`);assert.equal(response.status(),200,route);await page.locator('h1').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`Overflow: ${route}`);}
+await page.goto('http://127.0.0.1:3000/produits');await page.getByRole('textbox',{name:'Rechercher un produit'}).fill('introuvable');await page.getByRole('heading',{name:'Aucun résultat'}).waitFor();await page.getByRole('button',{name:'Réinitialiser la recherche'}).click();assert.equal(await page.locator('.product-card').count(),2);
+await page.getByRole('button',{name:'Ouvrir le panier'}).click();await page.getByRole('dialog').waitFor();await page.keyboard.press('Escape');assert.equal(await page.getByRole('dialog').count(),0);
+await page.goto('http://127.0.0.1:3000/contact?produit=Sachet&quantite=2');await page.getByLabel('Votre nom').fill('Client test');await page.getByLabel('Téléphone').fill('+25712345678');await page.getByRole('button',{name:'Préparer ma demande'}).click();await page.getByText('Votre demande est prête.').waitFor();assert.equal(await page.locator('a[href*="wa.me"]').count(),0);
+await page.goto('http://127.0.0.1:3000/');await page.locator('#format-tab-1').click();assert.equal(await page.locator('#format-tab-1').getAttribute('aria-selected'),'true');
+async function capture(path){for(let y=0;y<await page.evaluate(()=>document.body.scrollHeight);y+=600){await page.evaluate(y=>window.scrollTo(0,y),y);await page.waitForTimeout(130);}await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(300);await page.screenshot({path,fullPage:true});}
+await capture('test-results/desktop.png');
+await page.setViewportSize({width:390,height:844});await page.reload();await page.getByRole('button',{name:'Ouvrir le menu'}).click();await page.locator('.nav-links').getByRole('link',{name:'Nos produits'}).click();await page.waitForURL('**/produits');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+await page.goto('http://127.0.0.1:3000/');await capture('test-results/mobile.png');
+await page.evaluate(()=>localStorage.setItem('besta-cart-v1',JSON.stringify({state:{items:[{id:'besta-250',quantity:2}]},version:0})));
+await page.goto('http://127.0.0.1:3000/panier');await page.getByRole('button',{name:'Augmenter la quantité'}).click();assert.ok(await page.locator('.quantity').innerText().then(t=>t.includes('3')));await page.reload();assert.ok(await page.locator('.quantity').innerText().then(t=>t.includes('3')));
+await page.goto('http://127.0.0.1:3000/commande');await page.getByLabel('Nom complet').fill('Client test');await page.getByLabel('Téléphone').fill('+25712345678');await page.getByLabel('Adresse de livraison').fill('Adresse fictive de test');await page.getByRole('button',{name:'Générer le récapitulatif'}).click();await page.getByText('Récapitulatif prêt.').waitFor();await page.getByText('Votre commande n’a pas été envoyée ni enregistrée.').waitFor();
+await page.goto('http://127.0.0.1:3000/panier');await page.getByRole('button',{name:/Retirer/}).click();await page.getByRole('heading',{name:'À chacun son caractère.'}).waitFor();
+await page.goto('http://127.0.0.1:3000/produits/red-chilli-seeds-250-g');
+await page.locator('.product-photo').first().waitFor();
+assert.ok(await page.locator('.product-photo').first().evaluate(image=>image.complete&&image.naturalWidth>0),'Product photograph must load');
+await page.getByRole('button',{name:'Vue de la collection'}).click();
+assert.ok((await page.locator('.detail-grid .product-photo').getAttribute('src')).includes('besta-collection'));
+await page.goto('http://127.0.0.1:3000/contact');
+assert.ok(await page.locator('.contact-details').innerText().then(text=>text.includes('info@bfsolutions.com')&&text.includes('72 37 23 42')&&text.includes('Bujumbura')));
+assert.equal(await page.locator('.contact-details a[href="tel:+25772372342"]').count(),1);
+assert.equal((await page.goto('http://127.0.0.1:3000/admin')).status(),404,'Internal dashboard must not be part of the public project');
+await page.goto('http://127.0.0.1:3000/');
+assert.equal(await page.locator('.delivery-steps article').count(),3);
+assert.equal(await page.locator('.home-contact-details a[href="mailto:info@bfsolutions.com"]').count(),1);
+await page.locator('.hero-mobile-photo img').waitFor();
+assert.ok(await page.locator('.hero-mobile-photo img').evaluate(image=>image.complete&&image.naturalWidth>0));
+await page.getByRole('button',{name:'Ouvrir le menu'}).click();await page.keyboard.press('Escape');assert.equal(await page.getByRole('button',{name:'Ouvrir le menu'}).getAttribute('aria-expanded'),'false');
+for(const width of [320,820,1024]){await page.setViewportSize({width,height:900});await page.reload();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`Homepage overflow at ${width}px`);}
+await page.setViewportSize({width:320,height:900});
+for(const route of ['/livraison','/contact','/produits','/notre-histoire','/pourquoi-besta','/faq','/panier','/commande']){await page.goto('http://127.0.0.1:3000'+route);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`Narrow-phone overflow: ${route}`);}
+assert.equal((await page.goto('http://127.0.0.1:3000/page-inexistante')).status(),404);assert.deepEqual(errors,[]);
+await browser.close();console.log('PASS: all routes, 404, catalog search, cart drawer, contact, selector, mobile navigation, cart persistence and demonstration checkout.');

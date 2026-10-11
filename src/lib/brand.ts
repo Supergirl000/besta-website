@@ -1,0 +1,2 @@
+// From the company-page screenshot supplied by the user. Phone is not confirmed as WhatsApp.
+export const brand = {company:'Best Food Solutions',email:'info@bfsolutions.com',phone:'72 37 23 42',telephoneHref:'tel:+25772372342',address:'Zone Buterere, Quartier Miroir, Kiyange II, n° 18, Bujumbura, Burundi',website:'https://bfsolution.bi',socialUrl:'https://x.com/Bestsoluti2',origin:'Une entreprise sociale qui transforme le piment burundais pour les marchés local et international.'};

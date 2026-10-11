@@ -1,0 +1,6 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
+const page=await browser.newPage({reducedMotion:'reduce'});
+for(const width of [1440,820,390]){await page.setViewportSize({width,height:950});for(const route of ['/','/notre-histoire','/pourquoi-besta','/livraison','/produits','/produits/red-chilli-seeds-250-g','/produits/red-chilli-seeds-petit-contenant']){await page.goto('http://127.0.0.1:3000'+route);await page.locator('h1').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,route+' '+width);for(const img of await page.locator('main img').all()){await img.scrollIntoViewIfNeeded();await img.evaluate(i=>i.decode());assert.ok(await img.evaluate(i=>i.naturalWidth>0));}for(let y=0;y<await page.evaluate(()=>document.body.scrollHeight);y+=600){await page.evaluate(y=>window.scrollTo(0,y),y);await page.waitForTimeout(100);}await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'test-results/new-'+(route==='/'?'home':route.split('/').pop())+'-'+width+'.png',fullPage:true});}}
+await browser.close();console.log('PASS redesigned pages rendered at desktop, tablet and mobile; images loaded; no overflow.');
