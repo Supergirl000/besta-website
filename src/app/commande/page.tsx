@@ -1,3 +1,3 @@
 import { Checkout } from '@/components/forms';
 export const metadata={title:'Préparer votre commande'};
-export default function Page(){return <div className="page-shell"><div className="page-heading"><span className="eyebrow">BESTA / DÉMONSTRATION</span><h1>VOTRE COMMANDE<br/><em>COMMENCE ICI.</em></h1><p>Préparez un récapitulatif. Aucun paiement ni enregistrement de commande n’est effectué sur ce site.</p></div><Checkout/></div>;}
+export default function Page(){return <div className="page-shell"><div className="page-heading"><span className="eyebrow">VOTRE DEMANDE</span><h1>PRÉPAREZ<br/><em>VOTRE DEMANDE.</em></h1><p>Préparez votre récapitulatif, sans envoi de commande ni paiement.</p></div><Checkout/></div>;}

@@ -50,7 +50,7 @@ await page.goto('http://127.0.0.1:3000/');await capture('test-results/mobile.png
 await page.evaluate(()=>localStorage.setItem('besta-cart-v1',JSON.stringify({state:{items:[{id:'besta-250',quantity:2}]},version:0})));
 await page.goto('http://127.0.0.1:3000/panier');await page.getByRole('button',{name:'Augmenter la quantité'}).click();assert.ok(await page.locator('.quantity').innerText().then(t=>t.includes('3')));await page.reload();assert.ok(await page.locator('.quantity').innerText().then(t=>t.includes('3')));
 await page.goto('http://127.0.0.1:3000/commande');await page.getByLabel('Nom complet').fill('Client test');await page.getByLabel('Téléphone').fill('+25712345678');await page.getByLabel('Adresse de livraison').fill('Adresse fictive de test');await page.getByRole('button',{name:'Générer le récapitulatif'}).click();await page.getByText('Récapitulatif prêt.').waitFor();await page.getByText('Votre commande n’a pas été envoyée ni enregistrée.').waitFor();
-await page.goto('http://127.0.0.1:3000/panier');await page.getByRole('button',{name:/Retirer/}).click();await page.getByRole('heading',{name:'À chacun son caractère.'}).waitFor();
+await page.goto('http://127.0.0.1:3000/panier');await page.getByRole('button',{name:/Retirer/}).click();await page.getByRole('heading',{name:'Votre panier est vide.'}).waitFor();
 await page.goto('http://127.0.0.1:3000/produits/red-chilli-seeds-250-g');
 await page.locator('.product-photo').first().waitFor();
 assert.ok(await page.locator('.product-photo').first().evaluate(image=>image.complete&&image.naturalWidth>0),'Product photograph must load');
